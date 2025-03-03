@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Autodesk.Revit.UI.Selection;
+using RevitAPITrainingLibrary;
 
 namespace Module_5_6_2
 {
@@ -15,17 +17,26 @@ namespace Module_5_6_2
         private ExternalCommandData _commandData;
 
         public DelegateCommand SaveCommand { get; }
-        public List<Element> PickedObjects { get; } = new List<Element>();
-        public List<PipingSystemType> PipeSystems { get; } = new List<PipingSystemType>();
-
-        public PipingSystemType SelectedPipeSystem { get; set; }
-
+        public DelegateCommand GetPoin { get; }
+        public List<FamilyType> FurnitureTypes { get; } = new List<FamilyType>();
+        public List<Level> Levels { get; } = new List<Level>();
+        public WallType SelectedFurniturelType { get; set; }
+        public Level SelectedLevel { get; set; }
+        public XYZ Point { get; set; }
         public MainViewViewModel(ExternalCommandData commandData)
         {
             _commandData = commandData;
+            FurnitureTypes = FurnitureUtils.GetFurnitureType(commandData);
+            Levels = LevelsUtils.GetLevels(commandData);
+            GetPoin = new DelegateCommand(OnGetCommand);
             SaveCommand = new DelegateCommand(OnSaveCommand);
-            PickedObjects = SelectionUtils.PickObjects(commandData);
-            PipeSystems = PipesUtils.GetPipingSystems(commandData);
+            Point = SelectionUtils.GetPoints(_commandData, "Выберите точки", ObjectSnapTypes.Endpoints);
+
+        }
+
+        private void OnGetCommand()
+        {
+            throw new NotImplementedException();
         }
 
         private void OnSaveCommand()
@@ -34,27 +45,37 @@ namespace Module_5_6_2
             UIDocument uidoc = uiapp.ActiveUIDocument;
             Document doc = uidoc.Document;
 
-            if (PickedObjects.Count == 0 || SelectedPipeSystem == null)
+            if (Points.Count < 2 ||
+                SelectedWallType == null ||
+                SelectedLevel == null)
                 return;
 
-            using (var ts = new Transaction(doc, "Set system type"))
+            var curves = new List<Curve>();
+            for (int i = 0; i < Points.Count; i++)
             {
-                ts.Start();
+                if (i == 0) continue;
 
-                foreach (var pickedObject in PickedObjects)
-                {
-                    if (pickedObject is Pipe)
-                    {
-                        var oPipe = pickedObject as Pipe;
-                        oPipe.SetSystemType(SelectedPipeSystem.Id);
-                    }
-                }
+                var prevPoint = Points[i - 1];
+                var currentPoint = Points[i];
 
-                ts.Commit();
+                Curve curve = Line.CreateBound(prevPoint, currentPoint);
+                curves.Add(curve);
             }
 
+            using (var ts = new Transaction(doc, "Creatte Wall"))
+            {
+                ts.Start();
+                foreach (var curve in curves)
+                {
+                    Wall.Create(doc, curve, SelectedWallType.Id, SelectedLevel.Id,
+                        UnitUtils.ConvertToInternalUnits(WallHeight, UnitTypeId.Millimeters),
+                        0, false, false);
+                }
+                ts.Commit();
+            }
             RaiseCloseRequest();
         }
+
 
         public event EventHandler CloseRequest;
         private void RaiseCloseRequest()
@@ -62,5 +83,4 @@ namespace Module_5_6_2
             CloseRequest?.Invoke(this, EventArgs.Empty);
         }
     }
-}
 }

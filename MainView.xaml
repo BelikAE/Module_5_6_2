@@ -5,16 +5,25 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:Module_5_6_2"
              mc:Ignorable="d" 
-             Height="250" Width="300"
-   Title="Индефикатор элемента">
+             Height="210" Width="300"
+   Title="Расстановка мебели">
     <StackPanel>
-        <Label Content="Выбор системы"
-        Margin="5"/>
-        <ComboBox ItemsSource="{Binding PipeSystems}"
-           SelectedValue="{Binding SelectedPipeSystem}"
-           DisplayMemberPath="Name"
+        <Label Content="Выбрать тип мебели из списка"
            Margin="5"/>
-        <Button Content="Применить"
-         Command="{Binding SaveCommand}"/>
+        <ComboBox ItemsSource="{Binding FurnitureTypes}"
+          SelectedValue ="{Binding SelectedFurnitureType}"
+          DisplayMemberPath="Name"
+          Margin="5"/>
+        <Label Content="Выбрать уровень из списка"/>
+        <ComboBox ItemsSource="{Binding Levels}"
+          SelectedValue="{Binding SelectedLevel}"
+          DisplayMemberPath="Name"
+          Margin="5"/>
+        <Button Content="Указать точку размещения"
+ Command="{Binding GetPoint}"
+ Margin="5"/>
+        <Button Content="Создать"
+        Command="{Binding SaveCommand}"
+        Margin="5"/>
     </StackPanel>
 </Window>
