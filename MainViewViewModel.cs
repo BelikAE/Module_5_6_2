@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Autodesk.Revit.UI.Selection;
 using RevitAPITrainingLibrary;
+using Autodesk.Revit.DB.Mechanical;
 
 namespace Module_5_6_2
 {
@@ -17,10 +18,10 @@ namespace Module_5_6_2
         private ExternalCommandData _commandData;
 
         public DelegateCommand SaveCommand { get; }
-        public DelegateCommand GetPoin { get; }
-        public List<FamilyType> FurnitureTypes { get; } = new List<FamilyType>();
+        public DelegateCommand GetPoint { get; }
+        public List<FamilySymbol> FurnitureTypes { get; } = new List<FamilySymbol>();
         public List<Level> Levels { get; } = new List<Level>();
-        public WallType SelectedFurniturelType { get; set; }
+        public FamilySymbol SelectedFurniturelType { get; set; }
         public Level SelectedLevel { get; set; }
         public XYZ Point { get; set; }
         public MainViewViewModel(ExternalCommandData commandData)
@@ -28,15 +29,16 @@ namespace Module_5_6_2
             _commandData = commandData;
             FurnitureTypes = FurnitureUtils.GetFurnitureType(commandData);
             Levels = LevelsUtils.GetLevels(commandData);
-            GetPoin = new DelegateCommand(OnGetCommand);
+            GetPoint = new DelegateCommand(OnGetCommand);
             SaveCommand = new DelegateCommand(OnSaveCommand);
-            Point = SelectionUtils.GetPoints(_commandData, "Выберите точки", ObjectSnapTypes.Endpoints);
-
         }
 
         private void OnGetCommand()
         {
-            throw new NotImplementedException();
+            RaiseHideRequest();
+            Point = SelectionUtils.GetPoint(_commandData, "Выберите точки");
+            
+            RaiseShowRequest();
         }
 
         private void OnSaveCommand()
@@ -45,38 +47,27 @@ namespace Module_5_6_2
             UIDocument uidoc = uiapp.ActiveUIDocument;
             Document doc = uidoc.Document;
 
-            if (Points.Count < 2 ||
-                SelectedWallType == null ||
-                SelectedLevel == null)
-                return;
-
-            var curves = new List<Curve>();
-            for (int i = 0; i < Points.Count; i++)
-            {
-                if (i == 0) continue;
-
-                var prevPoint = Points[i - 1];
-                var currentPoint = Points[i];
-
-                Curve curve = Line.CreateBound(prevPoint, currentPoint);
-                curves.Add(curve);
-            }
-
-            using (var ts = new Transaction(doc, "Creatte Wall"))
+            using (var ts = new Transaction(doc, "Create"))
             {
                 ts.Start();
-                foreach (var curve in curves)
-                {
-                    Wall.Create(doc, curve, SelectedWallType.Id, SelectedLevel.Id,
-                        UnitUtils.ConvertToInternalUnits(WallHeight, UnitTypeId.Millimeters),
-                        0, false, false);
-                }
+                //doc.Create.NewFamilyInstance(Point, SelectedFurniturelType, SelectedLevel, Autodesk.Revit.DB.Structure.StructuralType.NonStructural);
                 ts.Commit();
             }
             RaiseCloseRequest();
+
         }
 
+        public event EventHandler HideRequest; //Эвент скрытия окна
+        private void RaiseHideRequest()
+        {
+            HideRequest?.Invoke(this, EventArgs.Empty); //Если есть методы то буду запускать те методы которые привязаны к HideRequestRequest
+        }
 
+        public event EventHandler ShowRequest; //Эвент показа окна
+        private void RaiseShowRequest()
+        {
+            ShowRequest?.Invoke(this, EventArgs.Empty); //Если есть методы то буду запускать те методы которые привязаны к ShowRequest
+        }
         public event EventHandler CloseRequest;
         private void RaiseCloseRequest()
         {
