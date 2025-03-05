@@ -18,55 +18,57 @@ namespace Module_5_6_2
         private ExternalCommandData _commandData;
 
         public DelegateCommand SaveCommand { get; }
-        public DelegateCommand GetPoint { get; }
+        public DelegateCommand GetPoints { get; }
         public List<FamilySymbol> FurnitureTypes { get; } = new List<FamilySymbol>();
         public List<Level> Levels { get; } = new List<Level>();
-        public FamilySymbol SelectedFurniturelType { get; set; }
+        public FamilySymbol SelectedFurnitureType { get; set; }
         public Level SelectedLevel { get; set; }
-        public XYZ Point { get; set; }
+        public List<XYZ> Points { get; set; } = new List<XYZ>();
+
         public MainViewViewModel(ExternalCommandData commandData)
         {
             _commandData = commandData;
             FurnitureTypes = FurnitureUtils.GetFurnitureType(commandData);
             Levels = LevelsUtils.GetLevels(commandData);
-            GetPoint = new DelegateCommand(OnGetCommand);
+            GetPoints = new DelegateCommand(OnGetPoints);
             SaveCommand = new DelegateCommand(OnSaveCommand);
+            
         }
 
-        private void OnGetCommand()
+        private void OnGetPoints()
         {
             RaiseHideRequest();
-            Point = SelectionUtils.GetPoint(_commandData, "Выберите точки");
-            
+            Points = SelectionUtils.GetPoints(_commandData, "Выберите точки", ObjectSnapTypes.Endpoints);
             RaiseShowRequest();
+
         }
 
         private void OnSaveCommand()
         {
-            UIApplication uiapp = _commandData.Application;
-            UIDocument uidoc = uiapp.ActiveUIDocument;
-            Document doc = uidoc.Document;
-
-            using (var ts = new Transaction(doc, "Create"))
+            if (Points.Count == 0)
             {
-                ts.Start();
-                //doc.Create.NewFamilyInstance(Point, SelectedFurniturelType, SelectedLevel, Autodesk.Revit.DB.Structure.StructuralType.NonStructural);
-                ts.Commit();
+                TaskDialog.Show("Ошибка","Не выбраны точки вставки");
+                return;
             }
+            foreach(var point in Points)
+            {
+                FamilyInstanceUtils.CreateFamilyInstance(_commandData, SelectedFurnitureType, point, SelectedLevel);
+            }
+
             RaiseCloseRequest();
 
         }
 
-        public event EventHandler HideRequest; //Эвент скрытия окна
+        public event EventHandler HideRequest;
         private void RaiseHideRequest()
         {
-            HideRequest?.Invoke(this, EventArgs.Empty); //Если есть методы то буду запускать те методы которые привязаны к HideRequestRequest
+            HideRequest?.Invoke(this, EventArgs.Empty); 
         }
 
-        public event EventHandler ShowRequest; //Эвент показа окна
+        public event EventHandler ShowRequest; 
         private void RaiseShowRequest()
         {
-            ShowRequest?.Invoke(this, EventArgs.Empty); //Если есть методы то буду запускать те методы которые привязаны к ShowRequest
+            ShowRequest?.Invoke(this, EventArgs.Empty); 
         }
         public event EventHandler CloseRequest;
         private void RaiseCloseRequest()

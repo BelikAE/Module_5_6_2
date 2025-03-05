@@ -21,7 +21,7 @@
           DisplayMemberPath="Name"
           Margin="5"/>
         <Button Content="Указать точку размещения"
-         Command="{Binding GetPoint}"
+         Command="{Binding GetPoints}"
          Margin="5"/>
         <Button Content="Создать"
         Command="{Binding SaveCommand}"
