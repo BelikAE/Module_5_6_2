@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 using Autodesk.Revit.UI.Selection;
 using RevitAPITrainingLibrary;
 using Autodesk.Revit.DB.Mechanical;
+using Autodesk.Revit.DB.Architecture;
+using System.Diagnostics;
 
 namespace Module_5_6_2
 {
@@ -25,6 +27,7 @@ namespace Module_5_6_2
         public Level SelectedLevel { get; set; }
         public List<XYZ> Points { get; set; } = new List<XYZ>();
 
+
         public MainViewViewModel(ExternalCommandData commandData)
         {
             _commandData = commandData;
@@ -32,15 +35,16 @@ namespace Module_5_6_2
             Levels = LevelsUtils.GetLevels(commandData);
             GetPoints = new DelegateCommand(OnGetPoints);
             SaveCommand = new DelegateCommand(OnSaveCommand);
-            
+
         }
 
         private void OnGetPoints()
         {
+
             RaiseHideRequest();
             Points = SelectionUtils.GetPoints(_commandData, "Выберите точки", ObjectSnapTypes.Endpoints);
             RaiseShowRequest();
-
+           
         }
 
         private void OnSaveCommand()
